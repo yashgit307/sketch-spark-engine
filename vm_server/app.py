@@ -1,10 +1,16 @@
 import logging
 import os
+import shutil
+import socket
+import subprocess
+import sys
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 
+from jobs import JobRegistry
 from pipeline import VMConfig, process_video
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
@@ -18,6 +24,9 @@ log = logging.getLogger("vm_server")
 app = Flask(__name__)
 cfg = VMConfig.from_env()
 VM_SECRET = os.getenv("VM_SECRET", "").strip()
+jobs = JobRegistry(cfg.output_dir / "jobs.json")
+SERVER_STARTED_AT = time.time()
+FFMPEG_VERSION = None
 
 
 @app.before_request
@@ -54,16 +63,56 @@ def process():
     missing = [field for field in required if not data.get(field)]
     if missing:
         return jsonify({"error": f"missing fields: {', '.join(missing)}"}), 400
+    job_id = jobs.start(
+        data["output_filename"], data["raw_video_path"], data["voiceover_path"]
+    )
     try:
         result = process_video(
             data["raw_video_path"], data["voiceover_path"], data["output_filename"], cfg
         )
     except FileNotFoundError as exc:
+        jobs.finish(job_id, False, str(exc))
         return jsonify({"status": "error", "message": str(exc)}), 404
     except Exception as exc:
+        jobs.finish(job_id, False, str(exc))
         log.exception("process-video failed")
         return jsonify({"status": "error", "message": str(exc)}), 500
+    jobs.finish(job_id, True)
     return jsonify({"status": "ok", "output_path": str(result)})
+
+
+@app.get("/jobs")
+def jobs_view():
+    return jsonify({"active": jobs.active(), "recent": jobs.recent()})
+
+
+@app.get("/stats")
+def stats():
+    global FFMPEG_VERSION
+    if FFMPEG_VERSION is None:
+        try:
+            probe = subprocess.run(
+                [cfg.ffmpeg_bin, "-version"], capture_output=True, text=True, timeout=10
+            )
+            FFMPEG_VERSION = probe.stdout.splitlines()[0] if probe.returncode == 0 else "unavailable"
+        except (OSError, subprocess.SubprocessError):
+            FFMPEG_VERSION = "unavailable"
+    disk = shutil.disk_usage(cfg.output_dir)
+    return jsonify(
+        {
+            "hostname": socket.gethostname(),
+            "platform": f"Python {sys.version.split()[0]}",
+            "uptime_seconds": int(time.time() - SERVER_STARTED_AT),
+            "ffmpeg": FFMPEG_VERSION,
+            "active_jobs": len(jobs.active()),
+            "disk": {
+                "total": disk.total,
+                "used": disk.used,
+                "free": disk.free,
+                "output_dir": str(cfg.output_dir),
+            },
+        }
+    )
 
 
 @app.get("/download/<path:filename>")
