@@ -17,18 +17,34 @@ class ContentGenerator:
             contents=prompt
         )
 
-    def generate_script(self, topic):
+    def generate_script(self, topic, platform="youtube"):
         """
-        Generates a short educational script in Hindi using the Gemini API.
+        Generates educational content depending on the platform.
         """
-        print(f"Generating Hindi script for topic: {topic}...")
-        prompt = f"""
-        Write a very short, engaging educational script for 5th to 6th-grade students about '{topic}'.
-        The script should be written in Hindi (using Devanagari script).
-        It should explain the concept using a fun cartoonish analogy.
-        Keep it under 60 seconds when read aloud (around 100-150 words).
-        Do not include any visual instructions or brackets like [Scene 1], just the spoken text.
-        """
+        print(f"Generating content for platform [{platform}] - Topic: {topic}...")
+        
+        if platform == "pinterest":
+            prompt = f"""
+            Write 3-4 bullet points summarizing '{topic}' for 5th-6th grade students.
+            The text should be written in Hindi (using Devanagari script).
+            Keep it extremely brief and punchy. This will be printed on an infographic image.
+            Do not include introductions or conclusions, just the facts.
+            """
+        elif platform in ["shorts", "instagram"]:
+            prompt = f"""
+            Write a high-energy, fast-paced educational script for 5th to 6th-grade students about '{topic}'.
+            The script should be written in Hindi (using Devanagari script).
+            Start with a strong hook. Keep it under 45 seconds when read aloud (around 80-100 words).
+            Do not include any visual instructions or brackets like [Scene 1], just the spoken text.
+            """
+        else: # Standard youtube
+            prompt = f"""
+            Write an engaging educational script for 5th to 6th-grade students about '{topic}'.
+            The script should be written in Hindi (using Devanagari script).
+            It should explain the concept using a fun cartoonish analogy.
+            Keep it under 60 seconds when read aloud (around 100-150 words).
+            Do not include any visual instructions or brackets like [Scene 1], just the spoken text.
+            """
         
         try:
             response = self._call_gemini(prompt)
@@ -39,21 +55,28 @@ class ContentGenerator:
             print(f"Error generating script with Gemini: {e}")
             return None
 
-    def generate_seo_metadata(self, script_text):
+    def generate_seo_metadata(self, script_text, platform="youtube"):
         """
-        Generates optimized Title, Description, and Tags for YouTube Shorts.
+        Generates optimized Title, Description, and Tags.
         """
-        print("Generating SEO metadata...")
-        prompt = f"""
-        Based on the following Hindi educational script for a YouTube Short, generate the following in English:
-        1. A catchy YouTube Short Title (under 60 characters).
-        2. A short description including 3 relevant hashtags.
-        3. A comma-separated list of 10 relevant tags for SEO.
+        print(f"Generating SEO metadata for [{platform}]...")
         
-        Script:
+        platform_instructions = ""
+        if platform == "pinterest":
+            platform_instructions = "1. A catchy Pinterest Pin Title.\n2. A short description with 3 hashtags.\n3. 10 relevant tags."
+        elif platform in ["shorts", "instagram"]:
+            platform_instructions = "1. A catchy Reel/Short Title (under 60 chars).\n2. A short description with 5 trending hashtags.\n3. 10 relevant tags."
+        else:
+            platform_instructions = "1. A catchy YouTube Title.\n2. A short description including 3 relevant hashtags.\n3. 10 relevant tags for SEO."
+            
+        prompt = f"""
+        Based on the following Hindi educational content, generate the following in English:
+        {platform_instructions}
+        
+        Content:
         {script_text}
         
-        Format the output EXACTLY like this:
+        Format the output EXACTLY like this (use these exact labels):
         TITLE: [Your Title]
         DESCRIPTION: [Your Description]
         TAGS: [tag1, tag2, tag3]

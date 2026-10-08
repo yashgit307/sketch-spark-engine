@@ -8,3 +8,4 @@ moviepy==1.0.3
 google-genai>=0.1.0
 gTTS>=2.5.0
 Pillow>=10.2.0
+tenacity>=8.0.0

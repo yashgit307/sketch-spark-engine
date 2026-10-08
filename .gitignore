@@ -8,3 +8,5 @@ output/
 data/pipeline_status.json
 *.log
 server.log
+
+config/client_secret*.json
