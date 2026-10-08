@@ -1,0 +1,16 @@
+[
+    {
+        "id": "acc_1",
+        "brand_name": "Chintu's Tech Adventures",
+        "niche": "Kids Tech Education (6-10 years)",
+        "platforms": ["YouTube", "Instagram", "Pinterest"],
+        "status": "Active"
+    },
+    {
+        "id": "acc_2",
+        "brand_name": "Grow Next Tech",
+        "niche": "B2B Tech Growth & SAAS",
+        "platforms": ["YouTube", "LinkedIn", "Twitter"],
+        "status": "Active"
+    }
+]

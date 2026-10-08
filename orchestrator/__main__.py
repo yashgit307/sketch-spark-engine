@@ -15,7 +15,12 @@ def main() -> int:
     run_parser = subparsers.add_parser("run", help="Run one pipeline pass now")
     run_parser.add_argument("--topic", help="Topic text (otherwise pops from the topics queue)")
     run_parser.add_argument(
-        "--no-publish", action="store_true", help="Skip the YouTube upload step"
+        "--platform",
+        default="youtube",
+        help="Target platform (youtube, instagram, pinterest, all)",
+    )
+    run_parser.add_argument(
+        "--no-publish", action="store_true", help="Skip the upload step entirely"
     )
 
     subparsers.add_parser("schedule", help="Run on the configured cron schedule")
@@ -29,7 +34,8 @@ def main() -> int:
     settings = Settings.from_env()
 
     if args.command == "run":
-        result = run_pipeline(topic=args.topic, publish=not args.no_publish, settings=settings)
+        platforms = [] if args.no_publish else [p.strip() for p in args.platform.split(",")]
+        result = run_pipeline(topic=args.topic, platforms=platforms, settings=settings)
         print(result)
     elif args.command == "schedule":
         run_scheduler(settings)

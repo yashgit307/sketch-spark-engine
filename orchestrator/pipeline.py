@@ -4,7 +4,7 @@ import re
 import time
 from pathlib import Path
 
-from . import script_gen, status, tts, uploader, vm_client
+from . import script_gen, status, tts, uploader, vm_client, social_publisher
 from .config import Settings
 
 log = logging.getLogger(__name__)
@@ -31,7 +31,11 @@ def _next_entry(settings: Settings) -> dict:
     return {"topic": entry} if isinstance(entry, str) else entry
 
 
-def run_pipeline(topic: str | None = None, publish: bool = True, settings: Settings | None = None) -> dict:
+def run_pipeline(
+    topic: str | None = None,
+    platforms: list[str] | None = None,
+    settings: Settings | None = None
+) -> dict:
     settings = settings or Settings.from_env()
     entry = {"topic": topic} if topic else _next_entry(settings)
     topic_text = str(entry.get("topic", "")).strip()
@@ -65,18 +69,35 @@ def run_pipeline(topic: str | None = None, publish: bool = True, settings: Setti
             "voiceover_file": str(voiceover_file),
             "vm": vm_result,
             "youtube": None,
+            "instagram": None,
+            "pinterest": None,
         }
 
-        if publish:
+        platforms = [p.lower() for p in (platforms or ["youtube"])]
+        if "all" in platforms:
+            platforms = ["youtube", "instagram", "pinterest"]
+
+        if platforms:
             local_video = vm_client.download_file(output_filename, settings.final_dir, settings)
             status.mark_stage(settings, slug, "download", local_video.name)
             thumbnail_value = entry.get("thumbnail_path") or settings.thumbnail_path
             thumbnail_file = Path(thumbnail_value) if thumbnail_value else None
-            result["youtube"] = uploader.upload_video(local_video, script, thumbnail_file, settings)
             result["final_video"] = str(local_video)
-            status.mark_stage(
-                settings, slug, "publish", result["youtube"].get("video_id", "")
-            )
+
+            if "youtube" in platforms:
+                result["youtube"] = uploader.upload_video(local_video, script, thumbnail_file, settings)
+                status.mark_stage(
+                    settings, slug, "publish_youtube", result["youtube"].get("video_id", "")
+                )
+            
+            if "instagram" in platforms:
+                result["instagram"] = social_publisher.publish_to_instagram(local_video, script, settings)
+                status.mark_stage(settings, slug, "publish_instagram", result["instagram"].get("status", ""))
+                
+            if "pinterest" in platforms:
+                result["pinterest"] = social_publisher.publish_to_pinterest(local_video, script, settings)
+                status.mark_stage(settings, slug, "publish_pinterest", result["pinterest"].get("status", ""))
+
     except Exception as exc:
         status.finish_episode(settings, slug, ok=False, detail=str(exc))
         log.exception("Pipeline failed for %s", topic_text)

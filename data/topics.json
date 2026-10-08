@@ -6,5 +6,37 @@
   {
     "topic": "Chintu seekshta hai - internet kaise kaam karta hai",
     "output_filename": "chintu_internet_kaise_kaam_karta_hai_final.mp4"
+  },
+  {
+    "topic": "Chintu aur Computer ka dimag - CPU kaise sochta hai",
+    "output_filename": "chintu_aur_cpu_ka_dimag_final.mp4"
+  },
+  {
+    "topic": "Chintu ki WiFi udaan - Signals hawa mein kaise udte hain",
+    "output_filename": "chintu_ki_wifi_udaan_final.mp4"
+  },
+  {
+    "topic": "Chintu seekhta hai Coding loops - Ek kaam ko baar baar kaise karein",
+    "output_filename": "chintu_seekhta_hai_coding_loops_final.mp4"
+  },
+  {
+    "topic": "Chintu aur Debugging ka jadoo - Computer ki galtiyan kaise theek karein",
+    "output_filename": "chintu_aur_debugging_ka_jadoo_final.mp4"
+  },
+  {
+    "topic": "Chintu ka Password secret - Apne data ko kaise safe rakhein",
+    "output_filename": "chintu_ka_password_secret_final.mp4"
+  },
+  {
+    "topic": "Chintu aur Cloud Storage - Hawa mein hamari photos kaise save hoti hain",
+    "output_filename": "chintu_aur_cloud_storage_final.mp4"
+  },
+  {
+    "topic": "Chintu aur Algorithms - Computer ko step-by-step rasta kaise dikhayein",
+    "output_filename": "chintu_aur_algorithms_final.mp4"
+  },
+  {
+    "topic": "Chintu seekhta hai Binary Code - Computer sirf 0 aur 1 kyun samajhta hai",
+    "output_filename": "chintu_seekhta_hai_binary_code_final.mp4"
   }
 ]

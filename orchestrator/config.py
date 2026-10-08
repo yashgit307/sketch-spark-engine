@@ -57,6 +57,11 @@ class Settings:
     webhook_port: int
     webhook_secret: str
 
+    ig_access_token: str
+    ig_user_id: str
+    pinterest_access_token: str
+    pinterest_board_id: str
+
     @classmethod
     def from_env(cls) -> "Settings":
         return cls(
@@ -80,9 +85,9 @@ class Settings:
             ).strip(),
             output_filename=os.getenv("OUTPUT_FILENAME", "chintu_magical_breakfast_final.mp4").strip(),
             youtube_client_secret_file=_resolve(
-                os.getenv("YOUTUBE_CLIENT_SECRET_FILE", "credentials/client_secret.json")
+                os.getenv("YOUTUBE_CLIENT_SECRET_FILE", "config/client_secrets.json")
             ),
-            youtube_token_file=_resolve(os.getenv("YOUTUBE_TOKEN_FILE", "credentials/token.json")),
+            youtube_token_file=_resolve(os.getenv("YOUTUBE_TOKEN_FILE", "config/token.json")),
             youtube_privacy_status=os.getenv("YOUTUBE_PRIVACY_STATUS", "private").strip().lower(),
             youtube_category_id=os.getenv("YOUTUBE_CATEGORY_ID", "24").strip(),
             youtube_default_tags=_csv(
@@ -101,4 +106,8 @@ class Settings:
             webhook_host=os.getenv("WEBHOOK_HOST", "0.0.0.0").strip(),
             webhook_port=int(os.getenv("WEBHOOK_PORT", "8080")),
             webhook_secret=os.getenv("WEBHOOK_SECRET", "").strip(),
+            ig_access_token=os.getenv("IG_ACCESS_TOKEN", "").strip(),
+            ig_user_id=os.getenv("IG_USER_ID", "").strip(),
+            pinterest_access_token=os.getenv("PINTEREST_ACCESS_TOKEN", "").strip(),
+            pinterest_board_id=os.getenv("PINTEREST_BOARD_ID", "").strip(),
         )
