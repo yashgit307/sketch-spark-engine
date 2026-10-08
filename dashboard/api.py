@@ -60,12 +60,22 @@ def youtube_channels(cfg: Settings):
     return channels.list_channels(cfg)
 
 
-def run_episode(cfg: Settings, topic: str = "", publish: bool = True):
+def run_episode(cfg: Settings, topic: str = "", publish: bool = True, platforms: list = None, account_creds: dict = None):
     import subprocess
+    import os
 
     command = [sys.executable, "-m", "orchestrator", "run"]
     if topic:
         command += ["--topic", topic]
     if not publish:
         command.append("--no-publish")
-    return subprocess.Popen(command, cwd=str(ROOT))
+    elif platforms:
+        command += ["--platform", ",".join(platforms)]
+        
+    env = os.environ.copy()
+    if account_creds:
+        for k, v in account_creds.items():
+            if v:
+                env[k] = str(v)
+
+    return subprocess.Popen(command, cwd=str(ROOT), env=env)

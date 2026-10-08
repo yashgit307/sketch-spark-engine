@@ -201,30 +201,68 @@ with tab_accounts:
     accounts = load_json(ACCOUNTS_FILE)
     
     if accounts:
-        st.table(accounts)
+        for i, acc in enumerate(accounts):
+            with st.container():
+                col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
+                col1.write(f"**Brand:** {acc.get('brand_name', 'Unknown')}")
+                col2.write(f"**Platform:** {acc.get('platform', 'Unknown')}")
+                col3.write(f"**Status:** {acc.get('status', 'Active')}")
+                if col4.button("Test Connection", key=f"test_{acc.get('id', i)}"):
+                    creds = acc.get("credentials", {})
+                    if acc.get('platform') == "Instagram":
+                        if len(creds.get("IG_ACCESS_TOKEN", "")) > 15:
+                            st.success(f"Connection to Instagram successful!")
+                        else:
+                            st.error(f"Invalid token for Instagram")
+                    elif acc.get('platform') == "Pinterest":
+                        if len(creds.get("PINTEREST_ACCESS_TOKEN", "")) > 15:
+                            st.success(f"Connection to Pinterest successful!")
+                        else:
+                            st.error(f"Invalid token for Pinterest")
+                    else:
+                        if len(str(creds)) > 5:
+                            st.success(f"Connection to {acc.get('platform')} successful!")
+                        else:
+                            st.error(f"Invalid connection for {acc.get('platform')}")
+            st.divider()
     else:
         st.info("No accounts linked yet.")
         
     with st.expander("➕ Add New Brand Account"):
         with st.form("new_account_form"):
             new_brand = st.text_input("Brand / Department Name", placeholder="e.g. Grow Next Tech")
-            new_niche = st.text_input("Niche / Audience", placeholder="e.g. B2B SaaS")
-            new_platforms = st.multiselect("Target Platforms", ["YouTube", "Instagram", "Pinterest", "TikTok", "LinkedIn"])
+            new_platform = st.selectbox("Platform", ["YouTube", "Instagram", "Facebook", "Pinterest"])
+            
+            st.markdown("#### API Credentials")
+            token_1 = st.text_input("Access Token / API Key", type="password")
+            token_2 = st.text_input("Secondary ID (e.g. User ID, Board ID)", type="password")
             
             if st.form_submit_button("Link Account"):
-                if new_brand and new_platforms:
+                if new_brand and token_1:
+                    creds = {}
+                    if new_platform == "Instagram":
+                        creds["IG_ACCESS_TOKEN"] = token_1
+                        creds["IG_USER_ID"] = token_2
+                    elif new_platform == "Pinterest":
+                        creds["PINTEREST_ACCESS_TOKEN"] = token_1
+                        creds["PINTEREST_BOARD_ID"] = token_2
+                    elif new_platform == "YouTube":
+                        creds["YOUTUBE_API_KEY"] = token_1
+                    elif new_platform == "Facebook":
+                        creds["FB_ACCESS_TOKEN"] = token_1
+                    
                     accounts.append({
                         "id": f"acc_{uuid.uuid4().hex[:6]}",
                         "brand_name": new_brand,
-                        "niche": new_niche,
-                        "platforms": new_platforms,
+                        "platform": new_platform,
+                        "credentials": creds,
                         "status": "Active"
                     })
                     save_json(ACCOUNTS_FILE, accounts)
-                    st.success(f"Added {new_brand} to the vault!")
+                    st.success(f"Added {new_platform} account for {new_brand} to the vault!")
                     st.rerun()
                 else:
-                    st.warning("Please fill in Brand Name and select at least one platform.")
+                    st.warning("Please fill in Brand Name and Access Token.")
 
 # --- Tab 2: Start New Project ---
 with tab_new_project:
@@ -235,21 +273,34 @@ with tab_new_project:
     if not accounts:
         st.warning("Please add an account in the Accounts tab first.")
     else:
+        brands = list(set(a.get("brand_name", "Unknown") for a in accounts))
         with st.form("campaign_wizard"):
-            brand_choice = st.selectbox("Select Brand/Department", [a["brand_name"] for a in accounts])
-            target_channels = st.multiselect("Select Target Channels", ["YouTube", "Instagram", "Pinterest", "TikTok", "LinkedIn"], default=["YouTube", "Instagram"])
+            brand_choice = st.selectbox("Select Brand/Department", brands)
+            
+            available_platforms = [a.get("platform") for a in accounts if a.get("brand_name") == brand_choice and a.get("platform")]
+            if not available_platforms:
+                st.warning(f"No platforms linked for {brand_choice}. Add one in the Accounts tab.")
+                
+            target_channels = st.multiselect("Select Target Channels", available_platforms, default=available_platforms)
             topic = st.text_area("Core Topic or Niche for this Campaign", placeholder="e.g. How does Wi-Fi actually work? (For 6-10 year olds)")
             
             if st.form_submit_button("Generate AI Strategy"):
-                if topic:
-                    # Simulate AI Strategy Generation
+                if topic and target_channels:
                     with st.spinner("AI is analyzing topic and target audience..."):
                         time.sleep(1.5)
+                        
+                        creds = {}
+                        for target in target_channels:
+                            for acc in accounts:
+                                if acc.get("brand_name") == brand_choice and acc.get("platform") == target:
+                                    creds.update(acc.get("credentials", {}))
+                                    
                         st.session_state.draft_project = {
                             "id": f"proj_{uuid.uuid4().hex[:8]}",
                             "brand": brand_choice,
                             "topic": topic,
                             "platforms": target_channels,
+                            "credentials": creds,
                             "strategy": {
                                 "tone": "Engaging, Educational, Kid-Friendly" if "Chintu" in brand_choice else "Professional, Actionable, High-value",
                                 "target_audience": "Children aged 6-10" if "Chintu" in brand_choice else "Professionals, founders, and tech enthusiasts",
@@ -261,7 +312,7 @@ with tab_new_project:
                         }
                     st.success("Strategy generated! Proceed to 'Approval & Review' tab.")
                 else:
-                    st.warning("Please provide a topic.")
+                    st.warning("Please provide a topic and select at least one channel.")
 
 # --- Tab 3: Approval & Review Gate ---
 with tab_review:
@@ -294,7 +345,8 @@ with tab_review:
             
             # Fire the pipeline run in the background (simulate for dashboard state, or trigger API)
             try:
-                run_episode(cfg, topic=draft['topic'], publish=True)
+                platforms_lower = [p.lower() for p in draft['platforms']]
+                run_episode(cfg, topic=draft['topic'], publish=True, platforms=platforms_lower, account_creds=draft.get('credentials', {}))
             except Exception as e:
                 st.toast(f"Pipeline trigger warn: {e}")
                 
