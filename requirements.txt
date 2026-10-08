@@ -9,3 +9,4 @@ google-genai>=0.1.0
 gTTS>=2.5.0
 Pillow>=10.2.0
 tenacity>=8.0.0
+google-cloud-storage>=2.14.0
